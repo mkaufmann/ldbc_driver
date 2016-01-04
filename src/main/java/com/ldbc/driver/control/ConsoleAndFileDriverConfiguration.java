@@ -164,6 +164,14 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
     private static final String WARMUP_COUNT_DESCRIPTION =
             format( "number of operations to execute during warmup phase (default: %s)",
                     WARMUP_COUNT_DEFAULT_STRING );
+    
+    public static final String SKIP_COUNT_ARG = "sk";
+    private static final String SKIP_COUNT_ARG_LONG = "skip";
+    public static final long SKIP_COUNT_DEFAULT = 0;
+    public static final String SKIP_COUNT_DEFAULT_STRING = Long.toString(SKIP_COUNT_DEFAULT);
+    private static final String SKIP_COUNT_DESCRIPTION =
+    		format( "number of operations to skip before warmup and run phase (default: %s)",
+                    SKIP_COUNT_DEFAULT_STRING );
 
     public static final String PROPERTY_FILE_ARG = "P";
     private static final String PROPERTY_FILE_DESCRIPTION =
@@ -206,6 +214,7 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         defaultParamsMap.put( PEER_IDS_ARG, PEER_IDS_DEFAULT_STRING );
         defaultParamsMap.put( SPINNER_SLEEP_DURATION_ARG, SPINNER_SLEEP_DURATION_DEFAULT_STRING );
         defaultParamsMap.put( WARMUP_COUNT_ARG, WARMUP_COUNT_DEFAULT_STRING );
+        defaultParamsMap.put( SKIP_COUNT_ARG, SKIP_COUNT_DEFAULT_STRING);
         return defaultParamsMap;
     }
 
@@ -282,6 +291,7 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
                     Boolean.parseBoolean( paramsMap.get( CALCULATE_WORKLOAD_STATISTICS_ARG ) );
             long spinnerSleepDurationAsMilli = Long.parseLong( paramsMap.get( SPINNER_SLEEP_DURATION_ARG ) );
             long warmupCount = Long.parseLong( paramsMap.get( WARMUP_COUNT_ARG ) );
+            long skipCount = Long.parseLong( paramsMap.get( SKIP_COUNT_ARG ) );
             boolean printHelp = Boolean.parseBoolean( paramsMap.get( HELP_ARG ) );
             boolean ignoreScheduledStartTimes =
                     Boolean.parseBoolean( paramsMap.get( IGNORE_SCHEDULED_START_TIMES_ARG ) );
@@ -303,7 +313,8 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
                     spinnerSleepDurationAsMilli,
                     printHelp,
                     ignoreScheduledStartTimes,
-                    warmupCount
+                    warmupCount,
+                    skipCount
             );
         }
         catch ( DriverConfigurationException e )
@@ -431,6 +442,11 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         {
             cmdParams.put( WARMUP_COUNT_ARG, cmd.getOptionValue( WARMUP_COUNT_ARG ) );
         }
+        
+        if ( cmd.hasOption( SKIP_COUNT_ARG ) )
+        {
+            cmdParams.put( SKIP_COUNT_ARG, cmd.getOptionValue( SKIP_COUNT_ARG ) );
+        }
 
         if ( cmd.hasOption( CREATE_VALIDATION_PARAMS_ARG ) )
         {
@@ -503,6 +519,7 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         paramsMap = replaceKey( paramsMap, CALCULATE_WORKLOAD_STATISTICS_ARG_LONG, CALCULATE_WORKLOAD_STATISTICS_ARG );
         paramsMap = replaceKey( paramsMap, SPINNER_SLEEP_DURATION_ARG_LONG, SPINNER_SLEEP_DURATION_ARG );
         paramsMap = replaceKey( paramsMap, WARMUP_COUNT_ARG_LONG, WARMUP_COUNT_ARG );
+        paramsMap = replaceKey( paramsMap, SKIP_COUNT_ARG_LONG, SKIP_COUNT_ARG );
         return paramsMap;
     }
 
@@ -608,6 +625,12 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
                         .withLongOpt(
                                 WARMUP_COUNT_ARG_LONG ).create( WARMUP_COUNT_ARG );
         options.addOption( warmupCountOption );
+        
+        Option skipCountOption =
+                OptionBuilder.hasArgs( 1 ).withArgName( "count" ).withDescription( SKIP_COUNT_DESCRIPTION )
+                        .withLongOpt(
+                                SKIP_COUNT_ARG_LONG ).create( SKIP_COUNT_ARG );
+        options.addOption( skipCountOption );
 
         Option printHelpOption = OptionBuilder.withDescription( HELP_DESCRIPTION ).create( HELP_ARG );
         options.addOption( printHelpOption );
@@ -688,7 +711,8 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
                 SPINNER_SLEEP_DURATION_ARG,
                 HELP_ARG,
                 IGNORE_SCHEDULED_START_TIMES_ARG,
-                WARMUP_COUNT_ARG
+                WARMUP_COUNT_ARG,
+                SKIP_COUNT_ARG
         );
     }
 
@@ -730,6 +754,7 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
     private final boolean printHelp;
     private final boolean ignoreScheduledStartTimes;
     private final long warmupCount;
+    private final long skipCount;
 
     public ConsoleAndFileDriverConfiguration( Map<String,String> paramsMap,
             String name,
@@ -748,7 +773,8 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
             long spinnerSleepDurationAsMilli,
             boolean printHelp,
             boolean ignoreScheduledStartTimes,
-            long warmupCount )
+            long warmupCount,
+            long skipCount)
     {
         if ( null == paramsMap )
         {
@@ -772,6 +798,7 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         this.printHelp = printHelp;
         this.ignoreScheduledStartTimes = ignoreScheduledStartTimes;
         this.warmupCount = warmupCount;
+        this.skipCount = skipCount;
 
         if ( null != name )
         {
@@ -808,6 +835,7 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         paramsMap.put( HELP_ARG, Boolean.toString( printHelp ) );
         paramsMap.put( IGNORE_SCHEDULED_START_TIMES_ARG, Boolean.toString( ignoreScheduledStartTimes ) );
         paramsMap.put( WARMUP_COUNT_ARG, Long.toString( warmupCount ) );
+        paramsMap.put( SKIP_COUNT_ARG, Long.toString( skipCount ) );
     }
 
     @Override
@@ -923,6 +951,12 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
     public long warmupCount()
     {
         return warmupCount;
+    }
+    
+    @Override
+    public long skipCount()
+    {
+        return skipCount;
     }
 
     @Override
@@ -1041,6 +1075,9 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         long newWarmupCount = (newParamsMapWithShortKeys.containsKey( WARMUP_COUNT_ARG )) ?
                               Long.parseLong( newParamsMapWithShortKeys.get( WARMUP_COUNT_ARG ) ) :
                               warmupCount;
+        long newSkipCount = (newParamsMapWithShortKeys.containsKey( SKIP_COUNT_ARG )) ?
+                                      Long.parseLong( newParamsMapWithShortKeys.get( SKIP_COUNT_ARG ) ) :
+                                      skipCount;
 
         return new ConsoleAndFileDriverConfiguration(
                 newOtherParams,
@@ -1060,7 +1097,8 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
                 newSpinnerSleepDurationAsMilli,
                 newPrintHelp,
                 newIgnoreScheduledStartTimes,
-                newWarmupCount
+                newWarmupCount,
+                newSkipCount
         );
     }
 
@@ -1081,6 +1119,7 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         argsList.addAll( Lists.newArrayList( "-" + SHOW_STATUS_ARG, Long.toString( statusDisplayIntervalAsSeconds ) ) );
         argsList.addAll( Lists.newArrayList( "-" + THREADS_ARG, Integer.toString( threadCount ) ) );
         argsList.addAll( Lists.newArrayList( "-" + WARMUP_COUNT_ARG, Long.toString( warmupCount ) ) );
+        argsList.addAll( Lists.newArrayList( "-" + SKIP_COUNT_ARG, Long.toString( skipCount ) ) );
         if ( null != name )
         {
             argsList.addAll( Lists.newArrayList( "-" + NAME_ARG, name ) );
@@ -1160,6 +1199,12 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         sb.append( "# COMMAND: " ).append( "-" ).append( WARMUP_COUNT_ARG ).append( "/--" )
                 .append( WARMUP_COUNT_ARG_LONG ).append( "\n" );
         sb.append( WARMUP_COUNT_ARG_LONG ).append( "=" ).append( warmupCount ).append( "\n" );
+        sb.append( "\n" );
+        sb.append( "# number of operations to skip before warmup and run phase of workload\n" );
+        sb.append( "# INT-64\n" );
+        sb.append( "# COMMAND: " ).append( "-" ).append( SKIP_COUNT_ARG ).append( "/--" )
+                .append( SKIP_COUNT_ARG_LONG ).append( "\n" );
+        sb.append( SKIP_COUNT_ARG_LONG ).append( "=" ).append( skipCount ).append( "\n" );
         sb.append( "\n" );
         sb.append( "# name of the benchmark run\n" );
         sb.append( "# STRING\n" );
@@ -1347,6 +1392,8 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
                 .append( INTEGRAL_FORMAT.format( operationCount ) ).append( "\n" );
         sb.append( "\t" ).append( format( "%1$-" + padRightDistance + "s", "Warmup Count:" ) )
                 .append( INTEGRAL_FORMAT.format( warmupCount ) ).append( "\n" );
+        sb.append( "\t" ).append( format( "%1$-" + padRightDistance + "s", "Skip Count:" ) )
+                .append( INTEGRAL_FORMAT.format( skipCount ) ).append( "\n" );
         sb.append( "\t" ).append( format( "%1$-" + padRightDistance + "s", "Worker Threads:" ) )
                 .append( threadCount ).append( "\n" );
         sb.append( "\t" ).append( format( "%1$-" + padRightDistance + "s", "Status Display Interval:" ) ).append(
@@ -1415,6 +1462,10 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
             return false;
         }
         if ( warmupCount != that.warmupCount )
+        {
+            return false;
+        }
+        if ( skipCount != that.skipCount )
         {
             return false;
         }
@@ -1491,6 +1542,7 @@ public class ConsoleAndFileDriverConfiguration implements DriverConfiguration
         result = 31 * result + (workloadClassName != null ? workloadClassName.hashCode() : 0);
         result = 31 * result + (int) (operationCount ^ (operationCount >>> 32));
         result = 31 * result + (int) (warmupCount ^ (warmupCount >>> 32));
+        result = 31 * result + (int) (skipCount ^ (skipCount >>> 32));
         result = 31 * result + threadCount;
         result = 31 * result + statusDisplayIntervalAsSeconds;
         result = 31 * result + (timeUnit != null ? timeUnit.hashCode() : 0);

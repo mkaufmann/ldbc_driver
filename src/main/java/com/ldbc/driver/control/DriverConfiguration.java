@@ -41,6 +41,8 @@ public interface DriverConfiguration
     boolean ignoreScheduledStartTimes();
 
     long warmupCount();
+    
+    long skipCount();
 
     String toPropertiesString() throws DriverConfigurationException;
 

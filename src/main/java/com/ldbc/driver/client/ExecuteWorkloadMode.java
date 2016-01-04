@@ -180,8 +180,8 @@ public class ExecuteWorkloadMode implements ClientMode<Object>
         loggingService.info( format( "Scanning workload streams to calculate their limits..." ) );
 
         long offset = (warmup)
-                      ? 0
-                      : controlService.configuration().warmupCount();
+                      ? controlService.configuration().skipCount()
+                      : controlService.configuration().skipCount() + controlService.configuration().warmupCount();
         long limit = (warmup)
                      ? controlService.configuration().warmupCount()
                      : controlService.configuration().operationCount();
